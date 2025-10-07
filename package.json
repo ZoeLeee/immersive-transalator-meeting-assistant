@@ -2,8 +2,8 @@
   "name": "immersive-transalator-meeting-assistant",
   "displayName": "Immersive transalator meeting assistant",
   "version": "0.0.1",
-  "description": "A basic Plasmo extension.",
-  "author": "Plasmo Corp. <foss@plasmo.com>",
+  "description": "将谷歌会议的沉浸式翻译字幕显示在浮动窗口中",
+  "author": "Joe Lee <zoolee1021@163.com>",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
@@ -26,6 +26,9 @@
   "manifest": {
     "host_permissions": [
       "https://*/*"
+    ],
+    "permissions": [
+      "storage"
     ]
   }
 }
