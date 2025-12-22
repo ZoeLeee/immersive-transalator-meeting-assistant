@@ -1,7 +1,7 @@
 {
   "name": "immersive-transalator-meeting-assistant",
   "displayName": "沉浸式翻译会议字幕助手",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "将谷歌会议的沉浸式翻译字幕显示在浮动窗口中",
   "author": "Joe Lee <zoolee1021@163.com>",
   "scripts": {

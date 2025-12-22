@@ -48,7 +48,8 @@ function createFloatingCaptionContainer() {
   FloatCaptionContainer.style.textAlign = "center"
   FloatCaptionContainer.style.display = "block"
   FloatCaptionContainer.style.whiteSpace = "pre-wrap"
-  FloatCaptionContainer.style.cursor = "move"
+  FloatCaptionContainer.style.maxHeight = "60px"
+  FloatCaptionContainer.style.overflowY = "auto"
 
   FloatCaptionContainer.setAttribute("data-id", "FLOATING_CAPTION")
   const main = document.getElementsByTagName("main")[0] || document.body
@@ -62,6 +63,8 @@ export function updateFloatingCaptionContainer(text: string) {
     createFloatingCaptionContainer()
   }
   FloatCaptionContainer.textContent = text
+  // 自动滚动到底部
+  FloatCaptionContainer.scrollTop = FloatCaptionContainer.scrollHeight
 }
 
 function showFloatingCaptionContainer() {
