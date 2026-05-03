@@ -21,6 +21,14 @@ let participantCount: number = 0
 
 let currentCaptionContent: string[] = []
 
+// 防抖与宽限期相关变量
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+let gracePeriodTimer: ReturnType<typeof setTimeout> | null = null
+let lastNonEmptyCaption: string = ""
+
+// 当前正在观测的字幕容器元素
+let currentCaptionContainer: HTMLElement | null = null
+
 // 生成UUID
 function generateUUID() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
@@ -62,9 +70,11 @@ export function updateFloatingCaptionContainer(text: string) {
   if (!FloatCaptionContainer || !FloatCaptionContainer.isConnected) {
     createFloatingCaptionContainer()
   }
-  FloatCaptionContainer.textContent = text
-  // 自动滚动到底部
-  FloatCaptionContainer.scrollTop = FloatCaptionContainer.scrollHeight
+  // 只有内容真正变化时才更新，避免无意义 DOM 操作
+  if (FloatCaptionContainer.textContent !== text) {
+    FloatCaptionContainer.textContent = text
+    FloatCaptionContainer.scrollTop = FloatCaptionContainer.scrollHeight
+  }
 }
 
 function showFloatingCaptionContainer() {
@@ -100,6 +110,7 @@ function startObservingCaptions() {
   stopObservingCaptions()
 
   let captionContainer: HTMLElement | null
+  currentCaptionContainer = null
 
   for (const s of [
     "[aria-label='字幕']",
@@ -147,23 +158,62 @@ function startObservingCaptions() {
     return
   }
 
+  currentCaptionContainer = captionContainer
+
   if (!FloatCaptionContainer) {
     createFloatingCaptionContainer()
   }
 
-  captionObserver = new MutationObserver((mutations) => {
+  captionObserver = new MutationObserver((_mutations) => {
     // 只有在启用状态下才处理变动
     if (!isEnabled) return
 
-    mutations.forEach((mutation) => {
-      if (mutation.type === "childList") {
-        const node = mutation.target as HTMLElement
-        if (node.classList.contains("immersive-translate-target-wrapper")) {
-          const content = node.textContent
-          updateFloatingCaptionContainer(content);
+    // 使用防抖，避免短时间内大量 mutation 导致频繁更新（抖动）
+    if (debounceTimer !== null) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      debounceTimer = null
+      if (!currentCaptionContainer) return
+
+      // 以稳定锚点 .immersive-translate-target-wrapper 为起点：
+      // - parentElement → 字幕块（不依赖不稳定的混淆 class）
+      // - 块内第一个 span → 说话者姓名（font 标签内没有 span，不会误选）
+      const lines: string[] = []
+      currentCaptionContainer.querySelectorAll(".immersive-translate-target-wrapper").forEach((translationEl) => {
+        const block = translationEl.parentElement
+        if (!block) return
+
+        const translation = translationEl.textContent?.trim() || ""
+        if (!translation) return
+
+        // 找说话者名：块内第一个 span（name 所在元素），排除 translation 内部
+        const nameSpan = block.querySelector("span")
+        const name = nameSpan?.textContent?.trim() || ""
+
+        const entry = name ? `${name}: ${translation}` : translation
+        lines.push(entry)
+      })
+
+      const combined = lines.join("\n\n")
+
+      if (combined) {
+        // 有新内容：取消宽限期计时器，立即更新
+        if (gracePeriodTimer !== null) {
+          clearTimeout(gracePeriodTimer)
+          gracePeriodTimer = null
+        }
+        lastNonEmptyCaption = combined
+        updateFloatingCaptionContainer(combined)
+      } else {
+        // 内容为空（说话者切换的短暂间隙）：启动宽限期，保留上一次内容
+        if (lastNonEmptyCaption && gracePeriodTimer === null) {
+          gracePeriodTimer = setTimeout(() => {
+            gracePeriodTimer = null
+            lastNonEmptyCaption = ""
+            updateFloatingCaptionContainer("")
+          }, 1500) // 1.5 秒宽限期
         }
       }
-    })
+    }, 80) // 80ms 防抖窗口
   })
 
   captionObserver.observe(captionContainer, {
