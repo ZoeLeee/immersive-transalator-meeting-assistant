@@ -56,8 +56,15 @@ function createFloatingCaptionContainer() {
   FloatCaptionContainer.style.textAlign = "center"
   FloatCaptionContainer.style.display = "block"
   FloatCaptionContainer.style.whiteSpace = "pre-wrap"
-  FloatCaptionContainer.style.maxHeight = "60px"
-  FloatCaptionContainer.style.overflowY = "auto"
+  FloatCaptionContainer.style.width = "360px"
+  FloatCaptionContainer.style.height = "64px"
+  FloatCaptionContainer.style.minWidth = "180px"
+  FloatCaptionContainer.style.minHeight = "48px"
+  FloatCaptionContainer.style.maxWidth = "80vw"
+  FloatCaptionContainer.style.maxHeight = "40vh"
+  FloatCaptionContainer.style.boxSizing = "border-box"
+  FloatCaptionContainer.style.overflow = "auto"
+  FloatCaptionContainer.style.resize = "both"
 
   FloatCaptionContainer.setAttribute("data-id", "FLOATING_CAPTION")
   const main = document.getElementsByTagName("main")[0] || document.body
@@ -310,11 +317,13 @@ function enableFloatingCaptionDragging() {
 
   const onMouseDown = (e: MouseEvent) => {
     if (!FloatCaptionContainer) return
+    const rect = FloatCaptionContainer.getBoundingClientRect()
+    if (e.clientX >= rect.right - 20 && e.clientY >= rect.bottom - 20) return
     isDragging = true
     ensureFixedPosition()
-    const rect = FloatCaptionContainer.getBoundingClientRect()
-    dragOffsetX = e.clientX - rect.left
-    dragOffsetY = e.clientY - rect.top
+    const fixedRect = FloatCaptionContainer.getBoundingClientRect()
+    dragOffsetX = e.clientX - fixedRect.left
+    dragOffsetY = e.clientY - fixedRect.top
     document.addEventListener("mousemove", onMouseMove)
     document.addEventListener("mouseup", onMouseUp, { once: true })
     e.preventDefault()
@@ -334,11 +343,13 @@ function enableFloatingCaptionDragging() {
     if (!FloatCaptionContainer) return
     if (e.touches.length !== 1) return
     const t = e.touches[0]
+    const rect = FloatCaptionContainer.getBoundingClientRect()
+    if (t.clientX >= rect.right - 20 && t.clientY >= rect.bottom - 20) return
     isDragging = true
     ensureFixedPosition()
-    const rect = FloatCaptionContainer.getBoundingClientRect()
-    dragOffsetX = t.clientX - rect.left
-    dragOffsetY = t.clientY - rect.top
+    const fixedRect = FloatCaptionContainer.getBoundingClientRect()
+    dragOffsetX = t.clientX - fixedRect.left
+    dragOffsetY = t.clientY - fixedRect.top
     document.addEventListener("touchmove", onTouchMove, { passive: false })
     document.addEventListener("touchend", onTouchEnd, { once: true })
   }
